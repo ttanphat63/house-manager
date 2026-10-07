@@ -13,6 +13,7 @@ import {
   Receipt,
   Calendar,
   AlertTriangle,
+  AlertCircle,
   Clock,
   CheckCircle2,
   Pencil,
@@ -21,6 +22,7 @@ import {
   ArrowRight,
   TrendingUp,
 } from "lucide-react";
+import { MetricStrip, type Metric } from "@/components/metric-strip";
 
 type Bill = {
   id: string;
@@ -135,6 +137,51 @@ export default async function DashboardPage() {
     );
 
   const unpaidCount = allBills.filter((b) => !b.paid).length;
+  const overdueBillsCount = allBills.filter(
+    (b) => !b.paid && daysUntil(b.due_date) < 0,
+  ).length;
+
+  const kpiMetrics: Metric[] = [
+    {
+      id: "total-month",
+      label: "Tổng chi tháng này",
+      value: formatMoney(totalMonth),
+      subtext: `${thisMonthBills.length} hóa đơn trong tháng`,
+      icon: Receipt,
+      color: "indigo",
+      delta: { value: "+12%", direction: "up" },
+    },
+    {
+      id: "electric",
+      label: "Tiền điện",
+      value: formatMoney(totalElectric),
+      subtext: `${
+        totalMonth > 0
+          ? `${Math.round((totalElectric / totalMonth) * 100)}% tổng hóa đơn`
+          : "Chưa phát sinh"
+      }`,
+      icon: Zap,
+      color: "amber",
+      delta: { value: "+8%", direction: "up" },
+    },
+    {
+      id: "water",
+      label: "Tiền nước",
+      value: formatMoney(totalWater),
+      subtext: "Sinh hoạt gia đình",
+      icon: Droplets,
+      color: "sky",
+      delta: { value: "-3%", direction: "down" },
+    },
+    {
+      id: "pending",
+      label: "Cần thanh toán",
+      value: `${upcomingBills.length} hóa đơn`,
+      subtext: `${overdueBillsCount} hóa đơn quá hạn`,
+      icon: AlertCircle,
+      color: "red",
+    },
+  ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -165,103 +212,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* 1. THẺ THỐNG KÊ TỔNG QUAN (STAT CARDS) Ở TRÊN CÙNG */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Tổng hóa đơn tháng */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm card-hover">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Tổng chi tháng này
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <Wallet className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            {formatMoney(totalMonth)}
-          </div>
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-500 dark:text-slate-400">
-            <Receipt className="w-3.5 h-3.5 text-indigo-500" />
-            <span>{thisMonthBills.length} hóa đơn trong tháng</span>
-          </div>
-        </div>
-
-        {/* Card 2: Tiền điện */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm card-hover">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Tiền điện
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-              <Zap className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            {formatMoney(totalElectric)}
-          </div>
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-600 dark:text-amber-400 font-medium">
-            <span>
-              {totalMonth > 0
-                ? `${Math.round((totalElectric / totalMonth) * 100)}% tổng hóa đơn`
-                : "Chưa phát sinh"}
-            </span>
-          </div>
-        </div>
-
-        {/* Card 3: Tiền nước */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm card-hover">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Tiền nước
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-              <Droplets className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            {formatMoney(totalWater)}
-          </div>
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-500 dark:text-slate-400">
-            <span>Sinh hoạt gia đình</span>
-          </div>
-        </div>
-
-        {/* Card 4: Tình trạng hóa đơn */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm card-hover">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Cần thanh toán
-            </span>
-            <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                unpaidCount > 0
-                  ? "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
-                  : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
-              }`}
-            >
-              {unpaidCount > 0 ? (
-                <Clock className="w-5 h-5" />
-              ) : (
-                <CheckCircle2 className="w-5 h-5" />
-              )}
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-            {unpaidCount} hóa đơn
-          </div>
-          <div className="flex items-center gap-1.5 mt-2 text-xs font-medium">
-            {unpaidCount > 0 ? (
-              <span className="text-rose-600 dark:text-rose-400">
-                {upcomingBills.length} hóa đơn sắp đến hạn
-              </span>
-            ) : (
-              <span className="text-emerald-600 dark:text-emerald-400">
-                Tất cả đã hoàn tất
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* 1. THẺ THỐNG KÊ TỔNG QUAN (METRIC STRIP) */}
+      <MetricStrip metrics={kpiMetrics} />
 
       {/* 2. BÊN DƯỚI CHIA THÀNH 2 CỘT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
