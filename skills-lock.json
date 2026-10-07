@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "forge-motion": {
+      "source": "BekhruzTursunboev/Bexa-professional-frontend-design-skills-for-ai-agents",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "d97f2a77ae48a3df2712b409af36070ea73ec88ca43fb3755f000f121d73d380"
+    }
+  }
+}
