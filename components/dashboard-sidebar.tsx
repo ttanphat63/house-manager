@@ -169,7 +169,7 @@ export function DashboardSidebar({
 
               {!isCollapsed && item.badge && (
                 <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 font-mono tabular-nums ${
                     item.active
                       ? "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"

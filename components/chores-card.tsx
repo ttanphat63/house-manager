@@ -154,7 +154,7 @@ export function ChoresCard() {
               <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
               Tiến độ hoàn thành
             </span>
-            <span className="font-bold text-slate-900 dark:text-slate-100">
+            <span className="font-bold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
               {completedCount}/{totalCount} việc ({progressPercent}%)
             </span>
           </div>
@@ -170,9 +170,9 @@ export function ChoresCard() {
         <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-800">
           {(
             [
-              { key: "all", label: "Tất cả" },
-              { key: "pending", label: `Chưa xong (${totalCount - completedCount})` },
-              { key: "done", label: `Đã xong (${completedCount})` },
+              { key: "all", label: "Tất cả", count: null },
+              { key: "pending", label: "Chưa xong", count: totalCount - completedCount },
+              { key: "done", label: "Đã xong", count: completedCount },
             ] as const
           ).map((tab) => (
             <button
@@ -185,6 +185,9 @@ export function ChoresCard() {
               }`}
             >
               {tab.label}
+              {tab.count !== null && (
+                <span className="font-mono tabular-nums"> ({tab.count})</span>
+              )}
             </button>
           ))}
         </div>
@@ -264,7 +267,7 @@ export function ChoresCard() {
                     {chore.title}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 font-mono tabular-nums">
                       <Clock className="w-3 h-3" />
                       {chore.dueTime}
                     </span>
@@ -296,7 +299,7 @@ export function ChoresCard() {
             <Users className="w-3.5 h-3.5 text-indigo-500" />
             Thành viên gia đình
           </span>
-          <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+          <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium font-mono tabular-nums">
             3 người phụ trách
           </span>
         </div>
@@ -323,7 +326,7 @@ export function ChoresCard() {
               </div>
               <div className="flex items-center justify-between text-[10px] text-slate-500">
                 <span>{m.role}</span>
-                <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400 font-mono tabular-nums">
                   {m.count}
                 </span>
               </div>

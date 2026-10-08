@@ -70,7 +70,7 @@ export function MetricStrip({ metrics, className = "" }: MetricStripProps) {
 
                 {metric.delta && (
                   <span
-                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded border shrink-0 ${
+                    className={`inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded border shrink-0 font-mono tabular-nums ${
                       metric.delta.direction === "up"
                         ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900"
                         : metric.delta.direction === "down"

@@ -224,7 +224,7 @@ export default async function DashboardPage() {
             <div className="rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 p-5 shadow-sm">
               <div className="flex items-center gap-2 mb-3 text-amber-800 dark:text-amber-300 font-bold text-sm">
                 <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                <span>Hóa đơn sắp đến hạn ({upcomingBills.length})</span>
+                <span>Hóa đơn sắp đến hạn <span className="font-mono tabular-nums">({upcomingBills.length})</span></span>
               </div>
 
               <div className="space-y-2.5">
@@ -247,7 +247,7 @@ export default async function DashboardPage() {
                           <div className="font-semibold text-slate-900 dark:text-slate-100 text-sm">
                             {bill.title}
                           </div>
-                          <div className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                          <div className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono tabular-nums">
                             {formatMoneyFull(bill.amount)}
                           </div>
                         </div>
@@ -255,7 +255,7 @@ export default async function DashboardPage() {
 
                       <div className="flex items-center gap-2.5 self-end sm:self-center">
                         <span
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full font-mono tabular-nums ${
                             days < 0
                               ? "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300"
                               : days <= 2
@@ -289,7 +289,7 @@ export default async function DashboardPage() {
                   <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
                     Danh sách Hóa đơn
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                     {allBills.length} hóa đơn đã ghi nhận
                   </p>
                 </div>
@@ -362,7 +362,7 @@ export default async function DashboardPage() {
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                               <Calendar className="w-3 h-3" />
-                              <span>
+                              <span className="font-mono tabular-nums">
                                 {bill.paid && bill.paid_date
                                   ? `Đã thanh toán ngày ${formatDate(bill.paid_date)}`
                                   : `Hạn đóng: ${formatDate(bill.due_date)}`}
@@ -398,7 +398,7 @@ export default async function DashboardPage() {
 
                       {/* Dòng 2: Số tiền & Actions */}
                       <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                        <div className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono tabular-nums">
                           {formatMoneyFull(bill.amount)}
                         </div>
 

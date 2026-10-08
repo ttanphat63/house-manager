@@ -61,7 +61,7 @@ export function DashboardTopbar({
             </div>
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span className="capitalize">{todayFormatted}</span>
+              <span className="capitalize font-mono tabular-nums">{todayFormatted}</span>
             </div>
           </div>
         </div>
