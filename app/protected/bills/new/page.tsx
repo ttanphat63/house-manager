@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { type Member } from "@/types/database";
+import {
+  BillSplitSection,
+  type SplitItem,
+} from "@/components/bill-split-section";
 import {
   Zap,
   Droplets,
@@ -45,6 +50,39 @@ export default function NewBillPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Split bill state
+  const [members, setMembers] = useState<
+    Pick<Member, "id" | "name" | "color" | "role">[]
+  >([]);
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splits, setSplits] = useState<SplitItem[]>([]);
+
+  // Fetch members on mount
+  useEffect(() => {
+    async function loadMembers() {
+      const { data } = await supabase
+        .from("members")
+        .select("id, name, color, role")
+        .order("created_at", { ascending: true });
+      if (data) {
+        setMembers(data);
+        setSplits(
+          data.map((m) => ({
+            memberId: m.id,
+            memberName: m.name,
+            memberColor: m.color,
+            amount: 0,
+          })),
+        );
+      }
+    }
+    loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const amountNum = Number(amount.replace(/[^0-9]/g, "")) || 0;
+  const splitTotal = splits.reduce((sum, s) => sum + s.amount, 0);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -54,7 +92,6 @@ export default function NewBillPage() {
       setError("Vui lòng nhập tên hóa đơn");
       return;
     }
-    const amountNum = Number(amount.replace(/[^0-9]/g, ""));
     if (!amountNum || amountNum <= 0) {
       setError("Vui lòng nhập số tiền hợp lệ");
       return;
@@ -62,6 +99,19 @@ export default function NewBillPage() {
     if (!dueDate) {
       setError("Vui lòng chọn ngày đến hạn");
       return;
+    }
+
+    // Validate splits
+    if (splitEnabled) {
+      const hasAnySplit = splits.some((s) => s.amount > 0);
+      if (!hasAnySplit) {
+        setError("Vui lòng nhập số tiền cho ít nhất một thành viên");
+        return;
+      }
+      if (splitTotal !== amountNum) {
+        setError("Tổng tiền chia phải bằng tổng hóa đơn");
+        return;
+      }
     }
 
     setLoading(true);
@@ -78,22 +128,50 @@ export default function NewBillPage() {
       return;
     }
 
-    // Insert vào DB
-    const { error: insertError } = await supabase.from("bills").insert({
-      user_id: user.id,
-      type,
-      title: title.trim(),
-      amount: amountNum,
-      due_date: dueDate,
-      note: note.trim() || null,
-      paid,
-      paid_date: paid ? new Date().toISOString().split("T")[0] : null,
-    });
+    // Insert bill AND get id back
+    const { data: insertedBill, error: insertError } = await supabase
+      .from("bills")
+      .insert({
+        user_id: user.id,
+        type,
+        title: title.trim(),
+        amount: amountNum,
+        due_date: dueDate,
+        note: note.trim() || null,
+        paid,
+        paid_date: paid ? new Date().toISOString().split("T")[0] : null,
+      })
+      .select("id")
+      .single();
 
-    if (insertError) {
+    if (insertError || !insertedBill) {
       setLoading(false);
-      setError("Lỗi khi lưu: " + insertError.message);
+      setError("Lỗi khi lưu: " + (insertError?.message || "Không rõ lỗi"));
       return;
+    }
+
+    // Insert splits if enabled
+    if (splitEnabled) {
+      const validSplits = splits.filter((s) => s.amount > 0);
+      if (validSplits.length > 0) {
+        const { error: splitError } = await supabase
+          .from("bill_splits")
+          .insert(
+            validSplits.map((s) => ({
+              user_id: user.id,
+              bill_id: insertedBill.id,
+              member_id: s.memberId,
+              amount: s.amount,
+              paid: false,
+              note: null,
+            })),
+          );
+
+        if (splitError) {
+          // Bill already saved, warn about split error but don't block
+          console.error("Split save error:", splitError);
+        }
+      }
     }
 
     router.push("/protected");
@@ -213,6 +291,16 @@ export default function NewBillPage() {
               className="w-full px-4 py-2.5 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none transition-spring"
             />
           </div>
+
+          {/* SPLIT BILL SECTION */}
+          <BillSplitSection
+            enabled={splitEnabled}
+            onEnabledChange={setSplitEnabled}
+            splits={splits}
+            onSplitsChange={setSplits}
+            totalAmount={amountNum}
+            members={members}
+          />
 
           {/* ĐÃ ĐÓNG */}
           <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl">

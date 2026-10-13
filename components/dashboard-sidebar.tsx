@@ -56,10 +56,12 @@ export function DashboardSidebar({
     },
     {
       title: "Thành viên gia đình",
-      href: "/protected#members",
+      href: "/protected/members",
       icon: Users,
-      badge: "4 người",
-      active: false,
+      badge: "3 người",
+      active:
+        pathname === "/protected/members" ||
+        pathname.startsWith("/protected/members/"),
     },
   ];
 

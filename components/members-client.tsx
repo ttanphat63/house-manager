@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import { type Member } from "@/types/database";
 import { MemberCard } from "./member-card";
+import { MemberFormModal } from "./member-form-modal";
+import { DeleteMemberDialog } from "./delete-member-dialog";
+import { createClient } from "@/lib/supabase/client";
 import { Users, Plus, UserPlus } from "lucide-react";
 
 interface MembersClientProps {
@@ -11,21 +14,39 @@ interface MembersClientProps {
 }
 
 export function MembersClient({ initialMembers, userId }: MembersClientProps) {
-  const [members] = useState<Member[]>(initialMembers);
+  const [members, setMembers] = useState<Member[]>(initialMembers);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingMember, setDeletingMember] = useState<Member | null>(null);
+
+  const supabase = createClient();
+
+  async function refreshMembers() {
+    const { data } = await supabase
+      .from("members")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (data) setMembers(data as Member[]);
+  }
 
   function handleEdit(member: Member) {
-    // Will be wired to MemberFormModal in Step 2
-    console.log("Edit member:", member);
+    setEditingMember(member);
+    setModalOpen(true);
   }
 
   function handleDelete(member: Member) {
-    // Will be wired to DeleteMemberDialog in Step 3
-    console.log("Delete member:", member);
+    setDeletingMember(member);
+    setDeleteDialogOpen(true);
   }
 
   function handleAddNew() {
-    // Will be wired to MemberFormModal in Step 2
-    console.log("Add new member");
+    setEditingMember(null);
+    setModalOpen(true);
   }
 
   return (
@@ -64,7 +85,8 @@ export function MembersClient({ initialMembers, userId }: MembersClientProps) {
             Chưa có thành viên nào
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-5 leading-relaxed">
-            Thêm các thành viên trong tổ ấm để bắt đầu chia tiền hóa đơn và phân chia công việc nhà tiện lợi.
+            Thêm các thành viên trong tổ ấm để bắt đầu chia tiền hóa đơn và
+            phân chia công việc nhà tiện lợi.
           </p>
           <button
             type="button"
@@ -88,6 +110,29 @@ export function MembersClient({ initialMembers, userId }: MembersClientProps) {
           ))}
         </div>
       )}
+
+      {/* MEMBER FORM MODAL (ADD / EDIT) */}
+      <MemberFormModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingMember(null);
+        }}
+        onSuccess={refreshMembers}
+        userId={userId}
+        editMember={editingMember}
+      />
+
+      {/* DELETE MEMBER DIALOG */}
+      <DeleteMemberDialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setDeletingMember(null);
+        }}
+        onSuccess={refreshMembers}
+        member={deletingMember}
+      />
     </div>
   );
 }

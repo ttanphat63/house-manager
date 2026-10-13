@@ -4,6 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { type Member } from "@/types/database";
+import {
+  BillSplitSection,
+  type SplitItem,
+} from "@/components/bill-split-section";
 import {
   Zap,
   Droplets,
@@ -45,31 +50,85 @@ export default function EditBillPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load dữ liệu cũ khi vào trang
-  useEffect(() => {
-    async function loadBill() {
-      const { data, error } = await supabase
-        .from("bills")
-        .select("*")
-        .eq("id", billId)
-        .single();
+  // Split bill state
+  const [members, setMembers] = useState<
+    Pick<Member, "id" | "name" | "color" | "role">[]
+  >([]);
+  const [splitEnabled, setSplitEnabled] = useState(false);
+  const [splits, setSplits] = useState<SplitItem[]>([]);
 
-      if (error || !data) {
+  const amountNum = Number(amount.replace(/[^0-9]/g, "")) || 0;
+  const splitTotal = splits.reduce((sum, s) => sum + s.amount, 0);
+
+  // Load bill data, members, and existing splits
+  useEffect(() => {
+    async function loadData() {
+      // Fetch bill, members, and existing splits in parallel
+      const [billResult, membersResult, splitsResult] = await Promise.all([
+        supabase.from("bills").select("*").eq("id", billId).single(),
+        supabase
+          .from("members")
+          .select("id, name, color, role")
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("bill_splits")
+          .select("*")
+          .eq("bill_id", billId)
+          .order("created_at", { ascending: true }),
+      ]);
+
+      if (billResult.error || !billResult.data) {
         setError("Không tìm thấy hóa đơn");
         setLoadingData(false);
         return;
       }
 
-      setType(data.type);
-      setTitle(data.title);
-      setAmount(data.amount.toString());
-      setDueDate(data.due_date);
-      setNote(data.note || "");
-      setPaid(data.paid);
+      // Set bill fields
+      setType(billResult.data.type);
+      setTitle(billResult.data.title);
+      setAmount(billResult.data.amount.toString());
+      setDueDate(billResult.data.due_date);
+      setNote(billResult.data.note || "");
+      setPaid(billResult.data.paid);
+
+      // Set members
+      const membersList = membersResult.data || [];
+      setMembers(membersList);
+
+      // Set splits — prefill from existing or initialize empty
+      const existingSplits = splitsResult.data || [];
+
+      if (existingSplits.length > 0) {
+        setSplitEnabled(true);
+        // Map existing splits to SplitItem, preserving member info
+        const splitItems: SplitItem[] = membersList.map((m) => {
+          const existing = existingSplits.find(
+            (s) => s.member_id === m.id,
+          );
+          return {
+            memberId: m.id,
+            memberName: m.name,
+            memberColor: m.color,
+            amount: existing ? Number(existing.amount) : 0,
+          };
+        });
+        setSplits(splitItems);
+      } else {
+        setSplits(
+          membersList.map((m) => ({
+            memberId: m.id,
+            memberName: m.name,
+            memberColor: m.color,
+            amount: 0,
+          })),
+        );
+      }
+
       setLoadingData(false);
     }
 
-    loadBill();
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [billId]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -80,7 +139,6 @@ export default function EditBillPage() {
       setError("Vui lòng nhập tên hóa đơn");
       return;
     }
-    const amountNum = Number(amount.replace(/[^0-9]/g, ""));
     if (!amountNum || amountNum <= 0) {
       setError("Vui lòng nhập số tiền hợp lệ");
       return;
@@ -90,8 +148,34 @@ export default function EditBillPage() {
       return;
     }
 
+    // Validate splits
+    if (splitEnabled) {
+      const hasAnySplit = splits.some((s) => s.amount > 0);
+      if (!hasAnySplit) {
+        setError("Vui lòng nhập số tiền cho ít nhất một thành viên");
+        return;
+      }
+      if (splitTotal !== amountNum) {
+        setError("Tổng tiền chia phải bằng tổng hóa đơn");
+        return;
+      }
+    }
+
     setLoading(true);
 
+    // Get current user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setLoading(false);
+      setError("Bạn cần đăng nhập lại");
+      return;
+    }
+
+    // Update bill
     const { error: updateError } = await supabase
       .from("bills")
       .update({
@@ -109,6 +193,32 @@ export default function EditBillPage() {
       setLoading(false);
       setError("Lỗi khi lưu: " + updateError.message);
       return;
+    }
+
+    // Delete old splits (idempotent)
+    await supabase.from("bill_splits").delete().eq("bill_id", billId);
+
+    // Insert new splits if enabled
+    if (splitEnabled) {
+      const validSplits = splits.filter((s) => s.amount > 0);
+      if (validSplits.length > 0) {
+        const { error: splitError } = await supabase
+          .from("bill_splits")
+          .insert(
+            validSplits.map((s) => ({
+              user_id: user.id,
+              bill_id: billId,
+              member_id: s.memberId,
+              amount: s.amount,
+              paid: false,
+              note: null,
+            })),
+          );
+
+        if (splitError) {
+          console.error("Split save error:", splitError);
+        }
+      }
     }
 
     router.push("/protected");
@@ -231,6 +341,17 @@ export default function EditBillPage() {
             />
           </div>
 
+          {/* SPLIT BILL SECTION */}
+          <BillSplitSection
+            enabled={splitEnabled}
+            onEnabledChange={setSplitEnabled}
+            splits={splits}
+            onSplitsChange={setSplits}
+            totalAmount={amountNum}
+            members={members}
+          />
+
+          {/* ĐÃ ĐÓNG */}
           <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl">
             <input
               type="checkbox"
