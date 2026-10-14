@@ -23,6 +23,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { MetricStrip, type Metric } from "@/components/metric-strip";
+import { BillSplitDisplay } from "@/components/bill-split-display";
+import { type BillSplit, type Member } from "@/types/database";
 
 type Bill = {
   id: string;
@@ -33,6 +35,10 @@ type Bill = {
   paid: boolean;
   paid_date: string | null;
   note: string | null;
+};
+
+type BillSplitWithMember = BillSplit & {
+  member: Pick<Member, "id" | "name" | "color" | "role">;
 };
 
 const typeConfig = {
@@ -110,6 +116,17 @@ export default async function DashboardPage() {
     .order("due_date", { ascending: false });
 
   const allBills = (bills || []) as Bill[];
+
+  const { data: allSplits } = await supabase
+    .from("bill_splits")
+    .select("*, member:members(id, name, color, role)")
+    .order("created_at", { ascending: true });
+
+  const splitsByBill: Record<string, BillSplitWithMember[]> = {};
+  (allSplits || []).forEach((split: any) => {
+    if (!splitsByBill[split.bill_id]) splitsByBill[split.bill_id] = [];
+    splitsByBill[split.bill_id].push(split as BillSplitWithMember);
+  });
 
   // Tính toán số liệu
   const now = new Date();
@@ -395,6 +412,14 @@ export default async function DashboardPage() {
                           {!bill.paid && <MarkPaidButton billId={bill.id} />}
                         </div>
                       </div>
+
+                      {/* SPLIT DISPLAY */}
+                      {splitsByBill[bill.id] && splitsByBill[bill.id].length > 0 && (
+                        <BillSplitDisplay
+                          splits={splitsByBill[bill.id]}
+                          billPaid={bill.paid}
+                        />
+                      )}
 
                       {/* Dòng 2: Số tiền & Actions */}
                       <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 dark:border-slate-800 text-xs">

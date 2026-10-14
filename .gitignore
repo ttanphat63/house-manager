@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Planning docs (temporary, not for repo)
+BLUEPRINT.md
+HANDOFF.md
