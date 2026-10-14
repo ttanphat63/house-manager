@@ -116,6 +116,7 @@ export default async function DashboardPage() {
     .order("due_date", { ascending: false });
 
   const allBills = (bills || []) as Bill[];
+  const recentBills = allBills.slice(0, 5);
 
   const { data: allSplits } = await supabase
     .from("bill_splits")
@@ -304,21 +305,30 @@ export default async function DashboardPage() {
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    Danh sách Hóa đơn
+                    Hóa đơn gần đây
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
-                    {allBills.length} hóa đơn đã ghi nhận
+                    {Math.min(5, allBills.length)} hóa đơn gần nhất
                   </p>
                 </div>
               </div>
 
-              <Link
-                href="/protected/bills/new"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-spring btn-press"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Thêm hóa đơn</span>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/protected/bills"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 px-3 py-1.5 rounded-lg transition-spring"
+                >
+                  <span>Xem tất cả</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  href="/protected/bills/new"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-spring btn-press"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm hóa đơn</span>
+                </Link>
+              </div>
             </div>
 
             {allBills.length === 0 ? (
@@ -342,7 +352,7 @@ export default async function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {allBills.map((bill) => {
+                {recentBills.map((bill) => {
                   const config = typeConfig[bill.type];
                   const Icon = config.icon;
                   const isUrgent = !bill.paid && daysUntil(bill.due_date) <= 3;
