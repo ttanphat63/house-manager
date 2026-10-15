@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { MetricStrip, type Metric } from "@/components/metric-strip";
 import { BillSplitDisplay } from "@/components/bill-split-display";
-import { type BillSplit, type Member } from "@/types/database";
+import { type BillSplit, type Member, type Chore } from "@/types/database";
 
 type Bill = {
   id: string;
@@ -109,19 +109,35 @@ export default async function DashboardPage() {
   const userEmail = authData.claims.email as string;
   const userName = userEmail.split("@")[0];
 
-  // Query tất cả hóa đơn của user
-  const { data: bills } = await supabase
-    .from("bills")
-    .select("*")
-    .order("due_date", { ascending: false });
+  // Query song song tất cả dữ liệu
+  const [
+    { data: bills },
+    { data: allSplits },
+    { data: choresData },
+    { data: membersData },
+  ] = await Promise.all([
+    supabase
+      .from("bills")
+      .select("*")
+      .order("due_date", { ascending: false }),
+    supabase
+      .from("bill_splits")
+      .select("*, member:members(id, name, color, role)")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("chores")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("members")
+      .select("id, name, color, role")
+      .order("created_at", { ascending: true }),
+  ]);
 
   const allBills = (bills || []) as Bill[];
   const recentBills = allBills.slice(0, 5);
-
-  const { data: allSplits } = await supabase
-    .from("bill_splits")
-    .select("*, member:members(id, name, color, role)")
-    .order("created_at", { ascending: true });
+  const dashboardChores = (choresData || []) as Chore[];
+  const dashboardMembers = (membersData || []) as Pick<Member, "id" | "name" | "color" | "role">[];
 
   const splitsByBill: Record<string, BillSplitWithMember[]> = {};
   (allSplits || []).forEach((split: any) => {
@@ -458,7 +474,7 @@ export default async function DashboardPage() {
 
         {/* CỘT PHẢI (COL-5): DANH SÁCH VIỆC NHÀ */}
         <div className="lg:col-span-5 space-y-6">
-          <ChoresCard />
+          <ChoresCard chores={dashboardChores} members={dashboardMembers} />
         </div>
       </div>
     </div>

@@ -50,9 +50,11 @@ export function DashboardSidebar({
     },
     {
       title: "Việc nhà",
-      href: "/protected#chores",
+      href: "/protected/chores",
       icon: CheckSquare,
-      active: false,
+      active:
+        pathname === "/protected/chores" ||
+        pathname.startsWith("/protected/chores/"),
     },
     {
       title: "Thành viên gia đình",

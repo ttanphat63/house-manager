@@ -1,14 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import {
   Menu,
   X,
   Bell,
-  Plus,
   Calendar,
-  Sparkles,
-  Search,
 } from "lucide-react";
 import { ThemeSwitcher } from "./theme-switcher";
 
@@ -68,15 +64,6 @@ export function DashboardTopbar({
 
         {/* RIGHT: ACTIONS & USER */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* QUICK ADD BILL */}
-          <Link
-            href="/protected/bills/new"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white shadow-sm shadow-indigo-600/30 transition-spring btn-press"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Thêm hóa đơn</span>
-            <span className="sm:hidden">Thêm</span>
-          </Link>
 
           {/* NOTIFICATION */}
           <button

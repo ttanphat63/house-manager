@@ -33,3 +33,20 @@ export type BillSplit = {
   created_at: string;
   member?: Member;
 };
+
+export type Chore = {
+  id: string;
+  user_id: string;
+  title: string;
+  assigned_to: string | null;
+  frequency: "daily" | "weekly" | "monthly" | "once";
+  next_due: string | null;
+  done: boolean;
+  done_at: string | null;
+  photo_url?: string | null;
+  note: string | null;
+  priority: "high" | "normal" | "low";
+  created_at: string;
+  updated_at?: string;
+};
+
