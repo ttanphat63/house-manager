@@ -13,6 +13,7 @@ import {
   ShieldCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  BarChart3,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -44,7 +45,7 @@ export function DashboardSidebar({
     },
     {
       title: "Hóa đơn",
-      href: "/protected#bills",
+      href: "/protected/bills",
       icon: Receipt,
       active: false,
     },
@@ -55,6 +56,14 @@ export function DashboardSidebar({
       active:
         pathname === "/protected/chores" ||
         pathname.startsWith("/protected/chores/"),
+    },
+    {
+      title: "Báo cáo",
+      href: "/protected/reports",
+      icon: BarChart3,
+      active:
+        pathname === "/protected/reports" ||
+        pathname.startsWith("/protected/reports/"),
     },
     {
       title: "Thành viên gia đình",
@@ -75,15 +84,13 @@ export function DashboardSidebar({
 
   return (
     <aside
-      className={`h-full flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${
-        isCollapsed ? "w-16" : "w-60"
-      }`}
+      className={`h-full flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] select-none ${isCollapsed ? "w-16" : "w-60"
+        }`}
     >
       {/* BRAND / LOGO HEADER (56px = h-14) */}
       <div
-        className={`h-14 flex items-center border-b border-slate-200 dark:border-slate-800 ${
-          isCollapsed ? "justify-center px-2" : "justify-between px-4"
-        }`}
+        className={`h-14 flex items-center border-b border-slate-200 dark:border-slate-800 ${isCollapsed ? "justify-center px-2" : "justify-between px-4"
+          }`}
       >
         {isCollapsed ? (
           <button
@@ -148,23 +155,20 @@ export function DashboardSidebar({
               href={item.href}
               onClick={onNavigate}
               title={item.title}
-              className={`flex items-center rounded-xl text-xs font-medium transition-spring group ${
-                isCollapsed
+              className={`flex items-center rounded-xl text-xs font-medium transition-spring group ${isCollapsed
                   ? "justify-center p-2.5"
                   : "justify-between px-3 py-2"
-              } ${
-                item.active
+                } ${item.active
                   ? "bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border-l-2 border-indigo-600 dark:border-indigo-500 shadow-xs"
                   : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-800/60"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div
-                  className={`p-1 rounded-lg transition-spring shrink-0 ${
-                    item.active
+                  className={`p-1 rounded-lg transition-spring shrink-0 ${item.active
                       ? "text-indigo-600 dark:text-indigo-400"
                       : "text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-                  }`}
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                 </div>
@@ -173,11 +177,10 @@ export function DashboardSidebar({
 
               {!isCollapsed && item.badge && (
                 <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 font-mono tabular-nums ${
-                    item.active
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 font-mono tabular-nums ${item.active
                       ? "bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                  }`}
+                    }`}
                 >
                   {item.badge}
                 </span>
