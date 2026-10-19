@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   ResponsiveContainer,
@@ -22,7 +22,9 @@ import {
   PieChart as PieChartIcon,
   BarChart3,
   Plus,
+  Download,
 } from "lucide-react";
+import { exportToCsv } from "@/lib/export-csv";
 import { type Bill } from "@/types/database";
 import { ChartCard } from "./chart-card";
 
@@ -112,6 +114,18 @@ export function ReportsClient({ bills }: ReportsClientProps) {
     ].filter((t) => t.value > 0);
   }, [bills]);
 
+  function handleExportMonthly() {
+    exportToCsv(
+      monthlyChartData,
+      [
+        { key: "month", header: "Tháng" },
+        { key: "total", header: "Tổng chi (VNĐ)" },
+        { key: "count", header: "Số hóa đơn" },
+      ],
+      "bao-cao-6-thang.csv"
+    );
+  }
+
   if (bills.length === 0) {
     return (
       <div className="py-16 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50">
@@ -137,6 +151,18 @@ export function ReportsClient({ bills }: ReportsClientProps) {
 
   return (
     <div className="space-y-6">
+      {/* EXPORT ACTION */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={handleExportMonthly}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Xuất báo cáo CSV</span>
+        </button>
+      </div>
+
       {/* CHART 1: LINE CHART — FULL WIDTH */}
       <ChartCard
         title="Xu hướng chi tiêu 6 tháng gần nhất"

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,8 +22,10 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  Download,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { exportToCsv } from "@/lib/export-csv";
 import { type Bill } from "@/types/database";
 import { BillSplitDisplay, type BillSplitWithMember } from "./bill-split-display";
 import { MarkPaidButton } from "./mark-paid-button";
@@ -197,6 +199,25 @@ export function BillsListClient({
     setStatusFilter("all");
     setTypeFilter("all");
     setMonthFilter("all");
+  }
+
+  function handleExportCsv() {
+    const currentYear = new Date().getFullYear();
+    const label = monthFilter !== "all" ? monthFilter : `all-${currentYear}`;
+
+    exportToCsv(
+      sortedBills,
+      [
+        { key: "title", header: "Tên hóa đơn" },
+        { key: "type", header: "Loại" },
+        { key: "amount", header: "Số tiền (VNĐ)" },
+        { key: "due_date", header: "Hạn đóng" },
+        { key: "paid", header: "Đã đóng" },
+        { key: "paid_date", header: "Ngày đóng" },
+        { key: "note", header: "Ghi chú" },
+      ],
+      `hoa-don-${label}.csv`
+    );
   }
 
   function toggleSelect(id: string) {
@@ -471,16 +492,29 @@ export function BillsListClient({
           </span>
         </div>
 
-        {hasActiveFilters && (
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={handleResetFilters}
-            className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium transition-spring"
+            onClick={handleExportCsv}
+            disabled={sortedBills.length === 0}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            title="Xuất CSV"
           >
-            <RotateCcw className="w-3 h-3" />
-            <span>Đặt lại bộ lọc</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>Xuất CSV</span>
           </button>
-        )}
+
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium transition-spring"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Đặt lại bộ lọc</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* BULK ACTION BAR */}
