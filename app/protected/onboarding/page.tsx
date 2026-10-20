@@ -116,7 +116,7 @@ export default function OnboardingPage() {
       const { data: foundGroup, error: findError } = await supabase
         .from("groups")
         .select("id, name")
-        .eq("invite_code", trimmedCode.toLowerCase())
+        .ilike("invite_code", trimmedCode)
         .maybeSingle();
 
       if (findError || !foundGroup) {
@@ -271,7 +271,7 @@ export default function OnboardingPage() {
                   }}
                   placeholder="Ví dụ: a1b2c3d4"
                   disabled={joinLoading}
-                  className="w-full px-4 py-3 text-sm font-mono uppercase tracking-wider bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-emerald-400 text-slate-900 dark:text-slate-100 transition-all placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal"
+                  className="w-full px-4 py-3 text-sm font-mono tracking-wider bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 dark:focus:border-emerald-400 text-slate-900 dark:text-slate-100 transition-all placeholder:text-slate-400 placeholder:tracking-normal"
                 />
               </div>
 
