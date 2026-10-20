@@ -3,8 +3,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: {
+      headers: requestHeaders,
+    },
   });
 
   // If the env vars are not set, skip proxy check. You can remove this
@@ -28,7 +33,9 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
-            request,
+            request: {
+              headers: requestHeaders,
+            },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options),
@@ -59,6 +66,32 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Backfill cookie active_group_id cho user cũ (đã login & truy cập /protected)
+  if (user && request.nextUrl.pathname.startsWith("/protected")) {
+    const hasActiveGroupCookie = request.cookies.get("active_group_id");
+
+    if (!hasActiveGroupCookie) {
+      const userId = (user.sub || user.id) as string;
+      if (userId) {
+        const { data: groups } = await supabase
+          .from("group_members")
+          .select("group_id")
+          .eq("user_id", userId)
+          .limit(1);
+
+        if (groups && groups.length > 0) {
+          supabaseResponse.cookies.set("active_group_id", groups[0].group_id, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 365,
+            path: "/",
+          });
+        }
+      }
+    }
+  }
+
   // IMPORTANT: You *must* return the supabaseResponse object as it is.
   // If you're creating a new response object with NextResponse.next() make sure to:
   // 1. Pass the request in it, like so:
@@ -74,3 +107,4 @@ export async function updateSession(request: NextRequest) {
 
   return supabaseResponse;
 }
+
