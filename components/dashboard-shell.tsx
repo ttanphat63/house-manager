@@ -1,15 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { DashboardSidebar } from "@/components/dashboard-sidebar";
+import { DashboardSidebar, type GroupSummary } from "@/components/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/dashboard-topbar";
 
 interface DashboardShellProps {
   userEmail?: string;
   children: React.ReactNode;
+  activeGroup?: GroupSummary | null;
+  userGroups?: GroupSummary[];
 }
 
-export function DashboardShell({ userEmail, children }: DashboardShellProps) {
+export function DashboardShell({
+  userEmail,
+  children,
+  activeGroup,
+  userGroups,
+}: DashboardShellProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -51,6 +58,8 @@ export function DashboardShell({ userEmail, children }: DashboardShellProps) {
           userEmail={userEmail}
           isCollapsed={isCollapsed}
           onToggleCollapse={handleToggleCollapse}
+          activeGroup={activeGroup}
+          userGroups={userGroups}
         />
       </div>
 
@@ -69,6 +78,8 @@ export function DashboardShell({ userEmail, children }: DashboardShellProps) {
               userEmail={userEmail}
               onNavigate={() => setIsMobileMenuOpen(false)}
               isCollapsed={false}
+              activeGroup={activeGroup}
+              userGroups={userGroups}
             />
           </div>
         </div>

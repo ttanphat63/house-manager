@@ -5,6 +5,7 @@ import { ArrowLeft, CheckSquare, CheckCircle2, Clock, AlertCircle } from "lucide
 import { MetricStrip, type Metric } from "@/components/metric-strip";
 import { ChoresListClient } from "@/components/chores-list-client";
 import { type Chore, type Member } from "@/types/database";
+import { getActiveGroupId } from "@/lib/group-context";
 
 function isTodayOrOverdue(chore: Chore): boolean {
   if (chore.done) return false;
@@ -23,17 +24,24 @@ export default async function ChoresPage() {
     redirect("/auth/login");
   }
 
+  const groupId = await getActiveGroupId();
+  if (!groupId) {
+    redirect("/protected/onboarding");
+  }
+
   const userId = authData.claims.sub as string;
 
-  // Fetch song song chores và members
+  // Fetch song song chores và members theo active group_id
   const [{ data: choresData }, { data: membersData }] = await Promise.all([
     supabase
       .from("chores")
       .select("*")
+      .eq("group_id", groupId)
       .order("created_at", { ascending: false }),
     supabase
       .from("members")
       .select("id, name, color, role")
+      .eq("group_id", groupId)
       .order("created_at", { ascending: true }),
   ]);
 

@@ -6,6 +6,7 @@ import { MetricStrip, type Metric } from "@/components/metric-strip";
 import { BillsListClient } from "@/components/bills-list-client";
 import { type Bill } from "@/types/database";
 import { type BillSplitWithMember } from "@/components/bill-split-display";
+import { getActiveGroupId } from "@/lib/group-context";
 
 function formatMoney(amount: number): string {
   if (amount >= 1_000_000) {
@@ -32,15 +33,22 @@ export default async function BillsPage() {
     redirect("/auth/login");
   }
 
-  // Fetch song song bills và bill_splits kèm members
+  const groupId = await getActiveGroupId();
+  if (!groupId) {
+    redirect("/protected/onboarding");
+  }
+
+  // Fetch song song bills và bill_splits kèm members theo active group_id
   const [{ data: billsData }, { data: allSplitsData }] = await Promise.all([
     supabase
       .from("bills")
       .select("*")
+      .eq("group_id", groupId)
       .order("due_date", { ascending: false }),
     supabase
       .from("bill_splits")
       .select("*, member:members(id, name, color, role)")
+      .eq("group_id", groupId)
       .order("created_at", { ascending: true }),
   ]);
 

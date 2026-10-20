@@ -5,6 +5,7 @@ import { ArrowLeft, Users, Receipt, AlertCircle, Wallet } from "lucide-react";
 import { MetricStrip, type Metric } from "@/components/metric-strip";
 import { MembersClient } from "@/components/members-client";
 import { type Member } from "@/types/database";
+import { getActiveGroupId } from "@/lib/group-context";
 
 function formatMoney(amount: number): string {
   if (amount >= 1_000_000) {
@@ -24,6 +25,11 @@ export default async function MembersPage() {
     redirect("/auth/login");
   }
 
+  const groupId = await getActiveGroupId();
+  if (!groupId) {
+    redirect("/protected/onboarding");
+  }
+
   const userId = authData.claims.sub as string;
 
   // Tính ngày đầu tiên của tháng hiện tại (YYYY-MM-01)
@@ -34,15 +40,17 @@ export default async function MembersPage() {
     .toISOString()
     .split("T")[0];
 
-  // Truy vấn song song members và bills trong tháng (Adjustment 1)
+  // Truy vấn song song members và bills trong tháng theo active group_id
   const [{ data: membersData }, { data: billsData }] = await Promise.all([
     supabase
       .from("members")
       .select("*")
+      .eq("group_id", groupId)
       .order("created_at", { ascending: true }),
     supabase
       .from("bills")
       .select("amount, due_date")
+      .eq("group_id", groupId)
       .gte("due_date", firstDayOfMonth),
   ]);
 

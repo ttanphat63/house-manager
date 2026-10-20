@@ -24,34 +24,49 @@ export default async function ProtectedLayout({
     ? pathname.startsWith("/protected/onboarding")
     : referer.includes("/protected/onboarding");
 
-  // 2. Kiểm tra user có ít nhất 1 group không
-  let hasGroup = false;
+  // 2. Query danh sách groups của user qua junction table group_members
+  type GroupSummary = { id: string; name: string; avatar_emoji: string };
+  let userGroups: GroupSummary[] = [];
+
   if (userId) {
-    const { data: userGroups } = await supabase
+    const { data: memberships } = await supabase
       .from("group_members")
-      .select("group_id")
-      .eq("user_id", userId)
-      .limit(1);
-    hasGroup = Boolean(userGroups && userGroups.length > 0);
+      .select("group_id, groups (id, name, avatar_emoji)")
+      .eq("user_id", userId);
+
+    userGroups = (memberships || [])
+      .map((m: any) => {
+        if (!m.groups) return null;
+        const g = Array.isArray(m.groups) ? m.groups[0] : m.groups;
+        if (!g) return null;
+        return {
+          id: g.id as string,
+          name: g.name as string,
+          avatar_emoji: (g.avatar_emoji || "🏠") as string,
+        };
+      })
+      .filter(Boolean) as GroupSummary[];
   }
 
-  const hasActiveCookie = !!(await getActiveGroupId());
+  const hasGroup = userGroups.length > 0;
+  const activeGroupId = await getActiveGroupId();
+  const activeGroup = userGroups.find((g) => g.id === activeGroupId) || userGroups[0] || null;
 
   // 3. Guard Onboarding:
-  // Nếu chưa có group VÀ chưa có cookie VÀ không phải trang onboarding -> redirect onboarding
-  if (!hasGroup && !hasActiveCookie && !isOnboardingPage) {
+  // Nếu chưa có group và chưa ở trang onboarding -> redirect onboarding
+  if (!hasGroup && !isOnboardingPage) {
     redirect("/protected/onboarding");
   }
 
-  // Nếu đã có group VÀ đang ở trang onboarding -> redirect về trang chủ protected
-  if (hasGroup && isOnboardingPage) {
-    redirect("/protected");
-  }
-
   return (
-    <DashboardShell userEmail={userEmail}>
+    <DashboardShell
+      userEmail={userEmail}
+      activeGroup={activeGroup}
+      userGroups={userGroups}
+    >
       {children}
     </DashboardShell>
   );
 }
+
 

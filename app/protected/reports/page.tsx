@@ -5,6 +5,7 @@ import { ArrowLeft, Wallet, Receipt, TrendingUp, BarChart3 } from "lucide-react"
 import { MetricStrip, type Metric } from "@/components/metric-strip";
 import { ReportsClient } from "@/components/reports-client";
 import { type Bill } from "@/types/database";
+import { getActiveGroupId } from "@/lib/group-context";
 
 function formatMoney(amount: number): string {
   if (amount >= 1_000_000) {
@@ -24,10 +25,16 @@ export default async function ReportsPage() {
     redirect("/auth/login");
   }
 
-  // Fetch tất cả hóa đơn của user
+  const groupId = await getActiveGroupId();
+  if (!groupId) {
+    redirect("/protected/onboarding");
+  }
+
+  // Fetch tất cả hóa đơn theo active group_id
   const { data: billsData } = await supabase
     .from("bills")
     .select("*")
+    .eq("group_id", groupId)
     .order("due_date", { ascending: true });
 
   const allBills = (billsData || []) as Bill[];

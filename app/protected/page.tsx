@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getActiveGroupId } from "@/lib/group-context";
 
 import { DashboardOverview } from "@/components/dashboard-overview";
 import { BillsActionableCard } from "@/components/bills-actionable-card";
@@ -67,19 +68,37 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
+  const groupId = await getActiveGroupId();
+  if (!groupId) {
+    redirect("/protected/onboarding");
+  }
+
   const userEmail = authData.claims.email as string;
   const userName = userEmail.split("@")[0];
 
-  // ── Fetch all data in parallel ──
+  // ── Fetch all data in parallel filtered by active group_id ──
   const [{ data: bills }, { data: allSplits }, { data: choresData }, { data: membersData }] =
     await Promise.all([
-      supabase.from("bills").select("*").order("due_date", { ascending: false }),
+      supabase
+        .from("bills")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("due_date", { ascending: false }),
       supabase
         .from("bill_splits")
         .select("*, member:members(id, name, color, role)")
+        .eq("group_id", groupId)
         .order("created_at", { ascending: true }),
-      supabase.from("chores").select("*").order("created_at", { ascending: false }),
-      supabase.from("members").select("id, name, color, role").order("created_at", { ascending: true }),
+      supabase
+        .from("chores")
+        .select("*")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("members")
+        .select("id, name, color, role")
+        .eq("group_id", groupId)
+        .order("created_at", { ascending: true }),
     ]);
 
   const allBills = (bills || []) as Bill[];

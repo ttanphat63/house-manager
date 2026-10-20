@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveGroupAction } from "@/lib/group-actions";
-import { Home, Link2, Sparkles, Loader2, AlertCircle, ArrowRight } from "lucide-react";
+import { Home, Link2, Sparkles, Loader2, AlertCircle, ArrowRight, ArrowLeft } from "lucide-react";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -156,7 +157,18 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 sm:p-6">
+    <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 sm:p-6 max-w-2xl mx-auto w-full">
+      {/* Back to dashboard */}
+      <div className="w-full flex items-center justify-start mb-4">
+        <Link
+          href="/protected"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-all group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Quay lại Dashboard</span>
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="text-center max-w-lg mb-8">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-3 shadow-xs">

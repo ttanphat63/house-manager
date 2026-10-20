@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Receipt,
@@ -14,15 +15,26 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   BarChart3,
+  Loader2,
+  UsersRound,
+  Plus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { switchGroupAction } from "@/app/protected/actions";
+
+export type GroupSummary = {
+  id: string;
+  name: string;
+  avatar_emoji: string;
+};
 
 interface DashboardSidebarProps {
   userEmail?: string;
   onNavigate?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  activeGroup?: GroupSummary | null;
+  userGroups?: GroupSummary[];
 }
 
 export function DashboardSidebar({
@@ -30,10 +42,27 @@ export function DashboardSidebar({
   onNavigate,
   isCollapsed = false,
   onToggleCollapse,
+  activeGroup,
+  userGroups,
 }: DashboardSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const displayName = userEmail ? userEmail.split("@")[0] : "Chủ hộ";
+  const [switching, setSwitching] = useState(false);
+
+  async function handleSwitchGroup(groupId: string) {
+    if (!groupId || groupId === activeGroup?.id) return;
+    setSwitching(true);
+    try {
+      await switchGroupAction(groupId);
+      onNavigate?.();
+      router.refresh();
+    } catch (err) {
+      console.error("Lỗi khi chuyển nhóm:", err);
+    } finally {
+      setSwitching(false);
+    }
+  }
 
   const navItems = [
     {
@@ -73,6 +102,12 @@ export function DashboardSidebar({
       active:
         pathname === "/protected/members" ||
         pathname.startsWith("/protected/members/"),
+    },
+    {
+      title: "Quản lý nhóm",
+      href: "/protected/onboarding",
+      icon: UsersRound,
+      active: pathname === "/protected/onboarding",
     },
   ];
 
@@ -138,6 +173,51 @@ export function DashboardSidebar({
           </>
         )}
       </div>
+
+      {/* GROUP SWITCHER */}
+      {!isCollapsed && activeGroup && userGroups && userGroups.length > 0 && (
+        <div className="px-3 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+          <div className="flex items-center justify-between mb-1.5 px-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Không gian nhóm
+            </span>
+            <div className="flex items-center gap-1.5">
+              {switching && <Loader2 className="w-3 h-3 text-indigo-500 animate-spin" />}
+              <Link
+                href="/protected/onboarding"
+                onClick={onNavigate}
+                title="Tạo hoặc tham gia nhóm mới"
+                className="p-0.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+          <select
+            value={activeGroup.id}
+            disabled={switching}
+            onChange={(e) => handleSwitchGroup(e.target.value)}
+            className="w-full px-2.5 py-1.5 text-xs font-semibold bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-2xs disabled:opacity-60"
+          >
+            {userGroups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.avatar_emoji || "🏠"} {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {isCollapsed && activeGroup && (
+        <div className="py-2.5 flex justify-center border-b border-slate-200 dark:border-slate-800">
+          <div
+            title={`Đang chọn: ${activeGroup.name}`}
+            className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-sm cursor-default hover:scale-105 transition-spring shadow-2xs"
+          >
+            {activeGroup.avatar_emoji || "🏠"}
+          </div>
+        </div>
+      )}
 
       {/* NAVIGATION */}
       <div className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
