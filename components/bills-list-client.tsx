@@ -94,6 +94,12 @@ export function BillsListClient({
   const router = useRouter();
   const supabase = createClient();
 
+  const [bills, setBills] = useState<Bill[]>(initialBills);
+
+  useEffect(() => {
+    setBills(initialBills);
+  }, [initialBills]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -111,28 +117,28 @@ export function BillsListClient({
   // Tab counts
   const statusCounts = useMemo(() => {
     return {
-      all: initialBills.length,
-      unpaid: initialBills.filter((b) => !b.paid).length,
-      paid: initialBills.filter((b) => b.paid).length,
-      overdue: initialBills.filter((b) => !b.paid && daysUntil(b.due_date) < 0).length,
+      all: bills.length,
+      unpaid: bills.filter((b) => !b.paid).length,
+      paid: bills.filter((b) => b.paid).length,
+      overdue: bills.filter((b) => !b.paid && daysUntil(b.due_date) < 0).length,
     };
-  }, [initialBills]);
+  }, [bills]);
 
-  // Available months (YYYY-MM) from initialBills, sorted descending
+  // Available months (YYYY-MM) from bills, sorted descending
   const availableMonths = useMemo(() => {
     const monthSet = new Set<string>();
-    initialBills.forEach((b) => {
+    bills.forEach((b) => {
       const ym = b.due_date?.slice(0, 7);
       if (ym) monthSet.add(ym);
     });
     return Array.from(monthSet).sort((a, b) => b.localeCompare(a));
-  }, [initialBills]);
+  }, [bills]);
 
   // Filtering
   const filteredBills = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    return initialBills.filter((bill) => {
+    return bills.filter((bill) => {
       // 1. Search filter
       if (query) {
         const titleMatch = bill.title.toLowerCase().includes(query);
@@ -160,7 +166,7 @@ export function BillsListClient({
 
       return true;
     });
-  }, [initialBills, searchQuery, statusFilter, typeFilter, monthFilter]);
+  }, [bills, searchQuery, statusFilter, typeFilter, monthFilter]);
 
   // Sorting
   const sortedBills = useMemo(() => {
@@ -488,7 +494,7 @@ export function BillsListClient({
             <strong className="text-slate-900 dark:text-slate-100 font-mono tabular-nums">
               {sortedBills.length}
             </strong>{" "}
-            / <span className="font-mono tabular-nums">{initialBills.length}</span> hóa đơn
+            / <span className="font-mono tabular-nums">{bills.length}</span> hóa đơn
           </span>
         </div>
 

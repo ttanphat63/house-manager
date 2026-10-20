@@ -122,6 +122,7 @@ export default async function ChoresPage() {
         initialChores={allChores}
         members={members}
         userId={userId}
+        groupId={groupId}
       />
     </div>
   );

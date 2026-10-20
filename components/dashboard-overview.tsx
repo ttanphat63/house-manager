@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, TrendingDown, Receipt, Zap, Droplets, ArrowRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Receipt, Zap, Droplets, ArrowRight, Eye } from "lucide-react";
+import { type Bill } from "@/types/database";
+import { MonthExpenseDetailModal } from "./month-expense-detail-modal";
 
 // ─────────────────────────────────────────────
 // Types
@@ -25,6 +27,14 @@ export interface DashboardOverviewProps {
   totalCount: number;
   /** Tháng hiện tại dạng "T10/2026" */
   monthLabel: string;
+  /** Danh sách hóa đơn tháng này */
+  thisMonthBills: Bill[];
+  /** Tổng số hóa đơn toàn bộ lịch sử */
+  allBillsCount: number;
+  /** Tháng hiện tại (0-11) */
+  currentMonth: number;
+  /** Năm hiện tại */
+  currentYear: number;
 }
 
 // ─────────────────────────────────────────────
@@ -92,14 +102,16 @@ function DeltaBadge({ delta }: { delta: number | null }) {
 
 interface MetricBlockProps {
   label: string;
-  value: string;
+  value: React.ReactNode;
   delta: number | null;
   icon: React.ReactNode;
   iconBg: string;
   isFirst?: boolean;
+  subtext?: string;
+  tooltip?: string;
 }
 
-function MetricBlock({ label, value, delta, icon, iconBg, isFirst }: MetricBlockProps) {
+function MetricBlock({ label, value, delta, icon, iconBg, isFirst, subtext, tooltip }: MetricBlockProps) {
   return (
     <div
       className={`flex flex-col gap-2 pt-4 sm:pt-0 ${
@@ -118,14 +130,21 @@ function MetricBlock({ label, value, delta, icon, iconBg, isFirst }: MetricBlock
         <div className="text-[0.6875rem] font-semibold tracking-wider uppercase text-indigo-400 dark:text-indigo-500">
           {label}
         </div>
-        <div className="text-2xl font-bold font-mono tabular-nums tracking-tight text-slate-900 dark:text-slate-100 mt-0.5 leading-tight">
+        <div
+          title={tooltip}
+          className={`mt-0.5 leading-tight ${tooltip ? "cursor-help" : ""}`}
+        >
           {value}
         </div>
-        {delta !== null && (
+        {subtext ? (
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+            {subtext}
+          </div>
+        ) : delta !== null ? (
           <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
             so với tháng trước
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -145,9 +164,14 @@ export function DashboardOverview({
   paidCount,
   totalCount,
   monthLabel,
+  thisMonthBills,
+  allBillsCount,
+  currentMonth,
+  currentYear,
 }: DashboardOverviewProps) {
   const [greeting, setGreeting] = useState<{ text: string; emoji: string } | null>(null);
   const [todayLabel, setTodayLabel] = useState<string>("");
+  const [showDetail, setShowDetail] = useState(false);
 
   // Hydration-safe: set greeting on client only
   useEffect(() => {
@@ -157,6 +181,16 @@ export function DashboardOverview({
 
   const paidPercent = totalCount > 0 ? Math.round((paidCount / totalCount) * 100) : 0;
   const allPaid = totalCount > 0 && paidCount === totalCount;
+
+  const tooltipTotal = `Tổng chi phí các hóa đơn có hạn đóng trong tháng ${
+    currentMonth + 1
+  }/${currentYear}. Không bao gồm hóa đơn có hạn ở tháng khác (dù đã thanh toán sớm).`;
+  const tooltipElectric = `Tổng tiền điện các hóa đơn có hạn đóng trong tháng ${
+    currentMonth + 1
+  }/${currentYear}`;
+  const tooltipWater = `Tổng tiền nước các hóa đơn có hạn đóng trong tháng ${
+    currentMonth + 1
+  }/${currentYear}`;
 
   return (
     <div
@@ -211,7 +245,19 @@ export function DashboardOverview({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-0">
           <MetricBlock
             label="Tổng chi"
-            value={formatMoney(totalMonth)}
+            value={
+              <button
+                type="button"
+                onClick={() => setShowDetail(true)}
+                title={tooltipTotal}
+                className="text-2xl font-bold font-mono tabular-nums tracking-tight text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all cursor-pointer flex items-baseline gap-1 group text-left"
+              >
+                <span>{formatMoney(totalMonth)}</span>
+                <Eye className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500 shrink-0" />
+              </button>
+            }
+            subtext={`${thisMonthBills.length}/${allBillsCount} hóa đơn có hạn trong tháng`}
+            tooltip={tooltipTotal}
             delta={deltaTotal}
             isFirst
             iconBg="bg-indigo-100 dark:bg-indigo-950/60"
@@ -219,14 +265,24 @@ export function DashboardOverview({
           />
           <MetricBlock
             label="Tiền điện"
-            value={formatMoney(totalElectric)}
+            value={
+              <div className="text-2xl font-bold font-mono tabular-nums tracking-tight text-slate-900 dark:text-slate-100">
+                {formatMoney(totalElectric)}
+              </div>
+            }
+            tooltip={tooltipElectric}
             delta={deltaElectric}
             iconBg="bg-amber-100 dark:bg-amber-950/60"
             icon={<Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
           />
           <MetricBlock
             label="Tiền nước"
-            value={formatMoney(totalWater)}
+            value={
+              <div className="text-2xl font-bold font-mono tabular-nums tracking-tight text-slate-900 dark:text-slate-100">
+                {formatMoney(totalWater)}
+              </div>
+            }
+            tooltip={tooltipWater}
             delta={deltaWater}
             iconBg="bg-sky-100 dark:bg-sky-950/60"
             icon={<Droplets className="w-4 h-4 text-sky-600 dark:text-sky-400" />}
@@ -263,6 +319,16 @@ export function DashboardOverview({
           </div>
         )}
       </div>
+
+      {/* DETAIL MODAL */}
+      <MonthExpenseDetailModal
+        isOpen={showDetail}
+        onClose={() => setShowDetail(false)}
+        totalMonth={totalMonth}
+        thisMonthBills={thisMonthBills}
+        month={currentMonth + 1}
+        year={currentYear}
+      />
     </div>
   );
 }

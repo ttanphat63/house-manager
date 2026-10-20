@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { type Member } from "@/types/database";
 import { MemberCard } from "./member-card";
 import { MemberFormModal } from "./member-form-modal";
@@ -11,10 +11,15 @@ import { Users, Plus, UserPlus } from "lucide-react";
 interface MembersClientProps {
   initialMembers: Member[];
   userId: string;
+  groupId: string;
 }
 
-export function MembersClient({ initialMembers, userId }: MembersClientProps) {
+export function MembersClient({ initialMembers, userId, groupId }: MembersClientProps) {
   const [members, setMembers] = useState<Member[]>(initialMembers);
+
+  useEffect(() => {
+    setMembers(initialMembers);
+  }, [initialMembers]);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,6 +35,7 @@ export function MembersClient({ initialMembers, userId }: MembersClientProps) {
     const { data } = await supabase
       .from("members")
       .select("*")
+      .eq("group_id", groupId)
       .order("created_at", { ascending: true });
     if (data) setMembers(data as Member[]);
   }
@@ -120,6 +126,7 @@ export function MembersClient({ initialMembers, userId }: MembersClientProps) {
         }}
         onSuccess={refreshMembers}
         userId={userId}
+        groupId={groupId}
         editMember={editingMember}
       />
 

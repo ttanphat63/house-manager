@@ -11,6 +11,7 @@ interface MemberFormModalProps {
   onClose: () => void;
   onSuccess: () => void;
   userId: string;
+  groupId: string;
   editMember?: Member | null;
 }
 
@@ -21,6 +22,7 @@ export function MemberFormModal({
   onClose,
   onSuccess,
   userId,
+  groupId,
   editMember,
 }: MemberFormModalProps) {
   const [name, setName] = useState("");
@@ -119,6 +121,7 @@ export function MemberFormModal({
       // INSERT
       const { error: insertError } = await supabase.from("members").insert({
         user_id: userId,
+        group_id: groupId,
         name: name.trim(),
         role: role.trim(),
         color,

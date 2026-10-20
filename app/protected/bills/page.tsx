@@ -1,22 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Receipt, CheckCircle2, Clock, Wallet } from "lucide-react";
-import { MetricStrip, type Metric } from "@/components/metric-strip";
+import { ArrowLeft, Plus } from "lucide-react";
+import { BillsKpiStrip } from "@/components/bills-kpi-strip";
 import { BillsListClient } from "@/components/bills-list-client";
 import { type Bill } from "@/types/database";
 import { type BillSplitWithMember } from "@/components/bill-split-display";
 import { getActiveGroupId } from "@/lib/group-context";
-
-function formatMoney(amount: number): string {
-  if (amount >= 1_000_000) {
-    return (amount / 1_000_000).toFixed(1).replace(".0", "") + "M ₫";
-  }
-  if (amount >= 1_000) {
-    return Math.round(amount / 1_000) + "K ₫";
-  }
-  return amount.toString() + " ₫";
-}
 
 function daysUntil(dateStr: string): number {
   const due = new Date(dateStr);
@@ -61,7 +51,7 @@ export default async function BillsPage() {
     splitsByBill[split.bill_id].push(split as BillSplitWithMember);
   });
 
-  // Tính 4 KPI metrics
+  // Tính các chỉ số cho KPI
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -77,44 +67,6 @@ export default async function BillsPage() {
   const overdueCount = allBills.filter(
     (b) => !b.paid && daysUntil(b.due_date) < 0
   ).length;
-
-  const kpiMetrics: Metric[] = [
-    {
-      id: "total-bills",
-      label: "Tổng hóa đơn",
-      value: `${allBills.length} hóa đơn`,
-      subtext: "Toàn bộ lịch sử",
-      icon: Receipt,
-      color: "indigo",
-    },
-    {
-      id: "paid-bills",
-      label: "Đã đóng",
-      value: `${paidCount} hóa đơn`,
-      subtext: `${allBills.length > 0
-          ? Math.round((paidCount / allBills.length) * 100)
-          : 0
-        }% hoàn thành`,
-      icon: CheckCircle2,
-      color: "sky",
-    },
-    {
-      id: "unpaid-bills",
-      label: "Chưa đóng",
-      value: `${unpaidCount} hóa đơn`,
-      subtext: `${overdueCount} hóa đơn quá hạn`,
-      icon: Clock,
-      color: unpaidCount > 0 ? "amber" : "indigo",
-    },
-    {
-      id: "month-expense",
-      label: "Tổng chi tháng này",
-      value: formatMoney(totalMonth),
-      subtext: `${thisMonthBills.length} hóa đơn tháng ${currentMonth + 1}`,
-      icon: Wallet,
-      color: "sky",
-    },
-  ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -148,8 +100,17 @@ export default async function BillsPage() {
         </Link>
       </div>
 
-      {/* 4 KPI METRICS STRIP */}
-      <MetricStrip metrics={kpiMetrics} />
+      {/* 3 KPI METRICS STRIP */}
+      <BillsKpiStrip
+        paidCount={paidCount}
+        unpaidCount={unpaidCount}
+        overdueCount={overdueCount}
+        totalMonth={totalMonth}
+        allBillsLength={allBills.length}
+        thisMonthBills={thisMonthBills}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
+      />
 
       {/* BILLS LIST WITH SEARCH AND FILTERS */}
       <BillsListClient

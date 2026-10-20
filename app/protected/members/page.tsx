@@ -32,15 +32,7 @@ export default async function MembersPage() {
 
   const userId = authData.claims.sub as string;
 
-  // Tính ngày đầu tiên của tháng hiện tại (YYYY-MM-01)
-  const now = new Date();
-  const firstDayOfMonth = new Date(
-    Date.UTC(now.getFullYear(), now.getMonth(), 1)
-  )
-    .toISOString()
-    .split("T")[0];
-
-  // Truy vấn song song members và bills trong tháng theo active group_id
+  // Truy vấn song song members và bills theo active group_id
   const [{ data: membersData }, { data: billsData }] = await Promise.all([
     supabase
       .from("members")
@@ -50,14 +42,23 @@ export default async function MembersPage() {
     supabase
       .from("bills")
       .select("amount, due_date")
-      .eq("group_id", groupId)
-      .gte("due_date", firstDayOfMonth),
+      .eq("group_id", groupId),
   ]);
 
   const members = (membersData || []) as Member[];
   const bills = billsData || [];
 
-  const totalMonth = bills.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Filter bills của tháng hiện tại
+  const thisMonthBills = bills.filter((b) => {
+    const d = new Date(b.due_date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  });
+
+  const totalMonth = thisMonthBills.reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
   const memberCount = members.length;
   const avgPerMember = memberCount > 0 ? Math.round(totalMonth / memberCount) : 0;
 
@@ -74,7 +75,7 @@ export default async function MembersPage() {
       id: "month-expense",
       label: "Tổng chi tháng này",
       value: formatMoney(totalMonth),
-      subtext: `${bills.length} hóa đơn trong tháng`,
+      subtext: `${thisMonthBills.length} hóa đơn trong tháng`,
       icon: Receipt,
       color: "amber",
     },
@@ -122,7 +123,7 @@ export default async function MembersPage() {
       <MetricStrip metrics={kpiMetrics} />
 
       {/* MEMBERS LIST & GRID */}
-      <MembersClient initialMembers={members} userId={userId} />
+      <MembersClient initialMembers={members} userId={userId} groupId={groupId} />
     </div>
   );
 }

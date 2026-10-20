@@ -21,6 +21,7 @@ interface ChoresListClientProps {
   initialChores: Chore[];
   members: Pick<Member, "id" | "name" | "color">[];
   userId: string;
+  groupId: string;
 }
 
 type StatusFilter = "all" | "pending" | "done";
@@ -30,6 +31,7 @@ export function ChoresListClient({
   initialChores,
   members,
   userId,
+  groupId,
 }: ChoresListClientProps) {
   const [chores, setChores] = useState<Chore[]>(initialChores);
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,6 +66,7 @@ export function ChoresListClient({
     const { data } = await supabase
       .from("chores")
       .select("*")
+      .eq("group_id", groupId)
       .order("created_at", { ascending: false });
     if (data) {
       setChores(data as Chore[]);
@@ -396,6 +399,7 @@ export function ChoresListClient({
           router.refresh();
         }}
         userId={userId}
+        groupId={groupId}
         members={members}
         editChore={editingChore}
       />

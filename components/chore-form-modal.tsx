@@ -11,6 +11,7 @@ interface ChoreFormModalProps {
   onClose: () => void;
   onSuccess: () => void;
   userId: string;
+  groupId: string;
   members: Pick<Member, "id" | "name" | "color">[];
   editChore?: Chore | null;
 }
@@ -20,6 +21,7 @@ export function ChoreFormModal({
   onClose,
   onSuccess,
   userId,
+  groupId,
   members,
   editChore,
 }: ChoreFormModalProps) {
@@ -111,6 +113,7 @@ export function ChoreFormModal({
     } else {
       const { error: insertError } = await supabase.from("chores").insert({
         user_id: userId,
+        group_id: groupId,
         ...chorePayload,
         done: false,
       });

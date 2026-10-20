@@ -83,7 +83,7 @@ export default async function ReportsPage() {
       id: "total-expense",
       label: "Tổng chi tiêu",
       value: formatMoney(totalExpense),
-      subtext: `${allBills.length} hóa đơn đã ghi nhận`,
+      subtext: "Tổng chi phí toàn bộ lịch sử",
       icon: Wallet,
       color: "indigo",
     },

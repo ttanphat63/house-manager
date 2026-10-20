@@ -9,22 +9,7 @@ import { BillsActionableCard } from "@/components/bills-actionable-card";
 import { DashboardMiniChart, type MonthlyDataPoint } from "@/components/dashboard-mini-chart";
 import { ChoresCard } from "@/components/chores-card";
 import { type BillSplitWithMember } from "@/components/bill-split-display";
-import { type Member, type Chore } from "@/types/database";
-
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
-
-type Bill = {
-  id: string;
-  type: "electric" | "water" | "net" | "other";
-  title: string;
-  amount: number;
-  due_date: string;
-  paid: boolean;
-  paid_date: string | null;
-  note: string | null;
-};
+import { type Bill, type Member, type Chore } from "@/types/database";
 
 // ─────────────────────────────────────────────
 // Helpers
@@ -209,6 +194,10 @@ export default async function DashboardPage() {
         paidCount={paidCount}
         totalCount={totalCount}
         monthLabel={monthLabel}
+        thisMonthBills={thisMonthBills}
+        allBillsCount={allBills.length}
+        currentMonth={currentMonth}
+        currentYear={currentYear}
       />
 
       {/* ── B: 2-column layout ── */}
