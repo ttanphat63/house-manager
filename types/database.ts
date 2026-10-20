@@ -1,6 +1,24 @@
+export type Group = {
+  id: string;
+  name: string;
+  owner_id: string;
+  invite_code: string;
+  avatar_emoji: string;
+  created_at: string;
+};
+
+export type GroupMember = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: "owner" | "admin" | "member";
+  joined_at: string;
+};
+
 export type Member = {
   id: string;
   user_id: string;
+  group_id: string;
   name: string;
   role: string;
   color: string;
@@ -11,6 +29,7 @@ export type Member = {
 export type Bill = {
   id: string;
   user_id: string;
+  group_id: string;
   type: "electric" | "water" | "net" | "other";
   title: string;
   amount: number;
@@ -24,6 +43,7 @@ export type Bill = {
 export type BillSplit = {
   id: string;
   user_id: string;
+  group_id: string;
   bill_id: string;
   member_id: string;
   amount: number;
@@ -37,6 +57,7 @@ export type BillSplit = {
 export type Chore = {
   id: string;
   user_id: string;
+  group_id: string;
   title: string;
   assigned_to: string | null;
   frequency: "daily" | "weekly" | "monthly" | "once";
