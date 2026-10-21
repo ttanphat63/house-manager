@@ -18,6 +18,7 @@ import {
   Loader2,
   UsersRound,
   Plus,
+  Settings,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { switchGroupAction } from "@/app/protected/actions";
@@ -76,7 +77,9 @@ export function DashboardSidebar({
       title: "Hóa đơn",
       href: "/protected/bills",
       icon: Receipt,
-      active: false,
+      active:
+        pathname === "/protected/bills" ||
+        pathname.startsWith("/protected/bills/"),
     },
     {
       title: "Việc nhà",
@@ -108,6 +111,14 @@ export function DashboardSidebar({
       href: "/protected/onboarding",
       icon: UsersRound,
       active: pathname === "/protected/onboarding",
+    },
+    {
+      title: "Cài đặt nhóm",
+      href: "/protected/settings",
+      icon: Settings,
+      active:
+        pathname === "/protected/settings" ||
+        pathname.startsWith("/protected/settings/"),
     },
   ];
 
