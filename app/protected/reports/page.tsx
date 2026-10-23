@@ -30,14 +30,22 @@ export default async function ReportsPage() {
     redirect("/protected/onboarding");
   }
 
-  // Fetch tất cả hóa đơn theo active group_id
-  const { data: billsData } = await supabase
-    .from("bills")
-    .select("*")
-    .eq("group_id", groupId)
-    .order("due_date", { ascending: true });
+  // Fetch tất cả hóa đơn và thông tin nhóm theo active group_id
+  const [{ data: billsData }, { data: groupData }] = await Promise.all([
+    supabase
+      .from("bills")
+      .select("*")
+      .eq("group_id", groupId)
+      .order("due_date", { ascending: true }),
+    supabase
+      .from("groups")
+      .select("name")
+      .eq("id", groupId)
+      .maybeSingle(),
+  ]);
 
   const allBills = (billsData || []) as Bill[];
+  const groupName = groupData?.name || "Gia đình";
 
   // Tính toán số liệu thống kê
   const monthlySums: Record<string, number> = {};
@@ -144,7 +152,7 @@ export default async function ReportsPage() {
       <MetricStrip metrics={kpiMetrics} />
 
       {/* RECHARTS VISUALIZATION */}
-      <ReportsClient bills={allBills} />
+      <ReportsClient bills={allBills} groupName={groupName} />
     </div>
   );
 }

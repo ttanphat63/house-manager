@@ -23,13 +23,17 @@ import {
   BarChart3,
   Plus,
   Download,
+  FileDown,
+  Loader2,
 } from "lucide-react";
 import { exportToCsv } from "@/lib/export-csv";
 import { type Bill } from "@/types/database";
 import { ChartCard } from "./chart-card";
+import { ReportPDF, type ReportPDFData, type ReportTypeBreakdown } from "./report-pdf";
 
 interface ReportsClientProps {
   bills: Bill[];
+  groupName?: string;
 }
 
 function formatMoneyFull(amount: number): string {
@@ -59,14 +63,111 @@ function formatMonthLabel(ym: string): string {
   return `T${parseInt(month, 10)}/${year}`;
 }
 
-export function ReportsClient({ bills }: ReportsClientProps) {
+export function ReportsClient({ bills, groupName = "Gia đình" }: ReportsClientProps) {
   const [mounted, setMounted] = useState(false);
+  const [PDFDownloadLink, setPDFDownloadLink] = useState<any>(null);
+
+  // Mặc định chọn tháng hiện tại (YYYY-MM)
+  const now = new Date();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentYM);
 
   useEffect(() => {
     setMounted(true);
+    // Dynamic import để tránh lỗi SSR trong Next.js
+    import("@react-pdf/renderer").then((mod) => {
+      setPDFDownloadLink(() => mod.PDFDownloadLink);
+    });
   }, []);
 
   const last6Months = useMemo(() => getLast6Months(), []);
+
+  // Danh sách các tháng có dữ liệu hoặc tháng hiện tại để chọn xuất báo cáo
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    set.add(currentYM);
+    bills.forEach((b) => {
+      const ym = b.due_date?.slice(0, 7);
+      if (ym) set.add(ym);
+    });
+    return Array.from(set).sort().reverse();
+  }, [bills, currentYM]);
+
+  // Chuẩn bị dữ liệu PDF cho tháng được chọn
+  const reportData = useMemo<ReportPDFData>(() => {
+    const [yearStr, monthStr] = selectedMonth.split("-");
+    const m = parseInt(monthStr, 10);
+    const y = parseInt(yearStr, 10);
+
+    const monthBills = bills.filter((b) => b.due_date?.startsWith(selectedMonth));
+    const totalMonth = monthBills.reduce((sum, b) => sum + Number(b.amount || 0), 0);
+    const paidCount = monthBills.filter((b) => b.paid).length;
+    const unpaidCount = monthBills.filter((b) => !b.paid).length;
+
+    // Đảm bảo typeBreakdown có đủ 4 loại (kể cả khi value = 0)
+    const sums: Record<string, number> = {
+      electric: 0,
+      water: 0,
+      net: 0,
+      other: 0,
+    };
+
+    monthBills.forEach((b) => {
+      if (sums[b.type] !== undefined) {
+        sums[b.type] += Number(b.amount || 0);
+      } else {
+        sums.other += Number(b.amount || 0);
+      }
+    });
+
+    const typeBreakdown: ReportTypeBreakdown[] = [
+      {
+        name: "Tiền điện",
+        value: sums.electric,
+        percent: totalMonth > 0 ? (sums.electric / totalMonth) * 100 : 0,
+      },
+      {
+        name: "Tiền nước",
+        value: sums.water,
+        percent: totalMonth > 0 ? (sums.water / totalMonth) * 100 : 0,
+      },
+      {
+        name: "Internet",
+        value: sums.net,
+        percent: totalMonth > 0 ? (sums.net / totalMonth) * 100 : 0,
+      },
+      {
+        name: "Chi phí khác",
+        value: sums.other,
+        percent: totalMonth > 0 ? (sums.other / totalMonth) * 100 : 0,
+      },
+    ];
+
+    const todayFormatted = new Intl.DateTimeFormat("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(new Date());
+
+    return {
+      groupName,
+      month: m,
+      year: y,
+      exportDate: todayFormatted,
+      bills: monthBills.map((b) => ({
+        id: b.id,
+        title: b.title,
+        type: b.type,
+        amount: Number(b.amount || 0),
+        due_date: b.due_date,
+        paid: b.paid,
+      })),
+      totalMonth,
+      paidCount,
+      unpaidCount,
+      typeBreakdown,
+    };
+  }, [bills, selectedMonth, groupName]);
 
   // 1. Monthly data for Line and Bar charts
   const monthlyChartData = useMemo(() => {
@@ -151,16 +252,76 @@ export function ReportsClient({ bills }: ReportsClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* EXPORT ACTION */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={handleExportMonthly}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Xuất báo cáo CSV</span>
-        </button>
+      {/* EXPORT ACTION BAR */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900/80 p-3 sm:px-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Tháng báo cáo:
+          </span>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="text-xs font-medium bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          >
+            {availableMonths.map((ym) => {
+              const [y, m] = ym.split("-");
+              return (
+                <option key={ym} value={ym}>
+                  Tháng {parseInt(m, 10)}/{y}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* NÚT XUẤT PDF */}
+          {mounted && PDFDownloadLink ? (
+            <PDFDownloadLink
+              document={<ReportPDF data={reportData} />}
+              fileName={`bao-cao-thang-${reportData.month}-${reportData.year}.pdf`}
+            >
+              {({ loading }: { loading: boolean }) => (
+                <button
+                  type="button"
+                  disabled={loading}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 px-3.5 py-1.5 rounded-lg transition-spring shadow-xs btn-press cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Đang tạo PDF...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileDown className="w-3.5 h-3.5" />
+                      <span>Xuất PDF</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </PDFDownloadLink>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3.5 py-1.5 rounded-lg opacity-60"
+            >
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Đang tải...</span>
+            </button>
+          )}
+
+          {/* NÚT XUẤT CSV */}
+          <button
+            type="button"
+            onClick={handleExportMonthly}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Xuất CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* CHART 1: LINE CHART — FULL WIDTH */}
