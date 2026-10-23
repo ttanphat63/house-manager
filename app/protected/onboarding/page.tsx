@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { setActiveGroupAction } from "@/lib/group-actions";
+import { createNotification } from "@/lib/notifications";
 import { Home, Link2, Sparkles, Loader2, AlertCircle, ArrowRight, ArrowLeft } from "lucide-react";
 
 export default function OnboardingPage() {
@@ -146,7 +147,17 @@ export default function OnboardingPage() {
         return;
       }
 
-      // 3. Set active group cookie & redirect
+      // 3. Tạo thông báo chào mừng
+      await createNotification({
+        userId: user.id,
+        groupId: foundGroup.id,
+        type: "member_joined",
+        title: "Chào mừng đến nhóm!",
+        message: `Bạn đã tham gia nhóm "${foundGroup.name}" thành công.`,
+        link: "/protected",
+      });
+
+      // 4. Set active group cookie & redirect
       await setActiveGroupAction(foundGroup.id);
       router.push("/protected");
       router.refresh();

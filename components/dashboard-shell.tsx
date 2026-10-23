@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { DashboardSidebar, type GroupSummary } from "@/components/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/dashboard-topbar";
+import type { Notification } from "@/types/database";
 
 interface DashboardShellProps {
   userEmail?: string;
   children: React.ReactNode;
   activeGroup?: GroupSummary | null;
   userGroups?: GroupSummary[];
+  notifications?: Notification[];
 }
 
 export function DashboardShell({
@@ -16,6 +18,7 @@ export function DashboardShell({
   children,
   activeGroup,
   userGroups,
+  notifications,
 }: DashboardShellProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -91,6 +94,7 @@ export function DashboardShell({
           userEmail={userEmail}
           isMobileMenuOpen={isMobileMenuOpen}
           setIsMobileMenuOpen={setIsMobileMenuOpen}
+          notifications={notifications}
         />
       </div>
 

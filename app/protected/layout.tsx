@@ -5,6 +5,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getActiveGroupId } from "@/lib/group-context";
+import { getNotifications, checkAndCreateBillDueNotifications } from "./actions";
 
 export default async function ProtectedLayout({
   children,
@@ -24,16 +25,28 @@ export default async function ProtectedLayout({
     ? pathname.startsWith("/protected/onboarding")
     : referer.includes("/protected/onboarding");
 
-  // 2. Query danh sách groups của user qua junction table group_members
+  // Tự động kiểm tra hóa đơn sắp đến hạn và tạo thông báo nếu cần
+  await checkAndCreateBillDueNotifications();
+
+  // 2. Query song song: danh sách groups của user và notifications
   type GroupSummary = { id: string; name: string; avatar_emoji: string };
   let userGroups: GroupSummary[] = [];
+  let notificationsPromise = getNotifications();
 
-  if (userId) {
-    const { data: memberships } = await supabase
-      .from("group_members")
-      .select("group_id, groups (id, name, avatar_emoji)")
-      .eq("user_id", userId);
+  let membershipsPromise = userId
+    ? supabase
+        .from("group_members")
+        .select("group_id, groups (id, name, avatar_emoji)")
+        .eq("user_id", userId)
+    : Promise.resolve({ data: [] });
 
+  const [{ data: memberships }, notifications, activeGroupId] = await Promise.all([
+    membershipsPromise,
+    notificationsPromise,
+    getActiveGroupId(),
+  ]);
+
+  if (memberships) {
     userGroups = (memberships || [])
       .map((m: any) => {
         if (!m.groups) return null;
@@ -49,7 +62,6 @@ export default async function ProtectedLayout({
   }
 
   const hasGroup = userGroups.length > 0;
-  const activeGroupId = await getActiveGroupId();
   const activeGroup = userGroups.find((g) => g.id === activeGroupId) || userGroups[0] || null;
 
   // 3. Guard Onboarding:
@@ -63,10 +75,12 @@ export default async function ProtectedLayout({
       userEmail={userEmail}
       activeGroup={activeGroup}
       userGroups={userGroups}
+      notifications={notifications}
     >
       {children}
     </DashboardShell>
   );
 }
+
 
 
